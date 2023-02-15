@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-class Sine(nn.module):
+class Sine(nn.Module):
     def __init__(self, in_features, out_features, bias=True, is_first=False, is_res=False, omega_0=30):
         super(Sine, self).__init__()
         # omega for sine activation
@@ -60,7 +60,6 @@ class CondSIREN(nn.Module):
             setattr(self, f"layer_{i+1}", layer)
         
         # out dim = 3 (rgb)
-        # TODO why need this final linear?
         final_linear = nn.Linear(W, out_feat, bias=True)
         with torch.no_grad():
             final_linear.weight.uniform_(-np.sqrt(6 / W) / hidden_omega_0,  np.sqrt(6 / W) / hidden_omega_0)
@@ -116,7 +115,7 @@ class VIINTER(CondSIREN):
 
         slt_zs = zs[rand_inds].reshape(batch_size, 2, -1)
         alphas = torch.rand_like(slt_zs[:, 0:1, 0:1])
-        z = self.inter_fn(val=alphas, low=slt_zs[:, 0], high=slt_zs[:, 1]).squeeze(1)
+        z = self.inter_fn(a=slt_zs[:, 0], b=slt_zs[:, 1], t=alphas).squeeze(1)
         x = xy_grid_flattened.repeat(batch_size, 1, 1)
 
         if chunked:

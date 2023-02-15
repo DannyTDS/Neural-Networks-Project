@@ -16,16 +16,6 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # retrive path for current script
 ROOT = os.path.dirname(os.path.realpath(__file__))
 
-class Solver():
-    def __init__(self,dataset,args,model):
-        self.lr = args.lr
-        pass
-
-    def train(self):
-        pass
-
-    def inf(self):
-        pass
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_name', default='exp', type=str)

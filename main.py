@@ -1,13 +1,12 @@
+import argparse
+
 from model import *
 from dataio import *
-import argparse
 from train import *
+from utils import *
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--exp_name', default='exp', type=str)
 parser.add_argument('--data_dir', default='data', type=str)
-parser.add_argument('--dset', default='LF', type=str)
-parser.add_argument('--scene', default='knights', type=str)
 parser.add_argument('--size', help='if not None, resize image', default=None, type=int)
 
 parser.add_argument('--start_lr', default=1e-5, type=float)
@@ -22,36 +21,38 @@ parser.add_argument('--D', default=8, type=int)
 parser.add_argument('--bsize', default=8192, type=int)
 parser.add_argument('--iters', default=300000, type=int)
 parser.add_argument('--save_freq', default=20000, type=int)
+parser.add_argument('--save_dir', default='./out/', type=str)
 parser.add_argument('--silent', action='store_true')
 
 args = parser.parse_args()
 
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
 def main():
     #init train dataset
-    dataset = TrainSet(args).getTrainDataset()
-
+    train_dataset = TrainSet(args.data_dir)
     #init model
-    model = VIINTER()
+    inter_fn = lerp
+    model = VIINTER(n_emb = len(train_dataset), norm_p = args.p, inter_fn=inter_fn, D=args.D, z_dim = args.z_dim, in_feat=2, out_feat=3, W=args.W, with_res=False, with_norm=True)
+    model.to(DEVICE)
     #init solver
-    solver = Solver(dataset,args,model)
+    solver = Solver(args, train_dataset, model, DEVICE)
+    # train the model
     solver.train()
     pass
 
-def inf():
-    #init model
-    model = VIINTER()
-    #load weight
+# def inf():
+#     #init model
+#     model = VIINTER()
+#     #load weight
 
-    #init inf dataset
+#     #init inf dataset
 
-    #init solver
-    solver = Solver(dataset,arge,model)
-    solver.inf()
-    pass
-
-
+#     #init solver
+#     # solver = Solver(dataset,arge,model)
+#     # solver.inf()
+#     # pass
 
 
-if "__name__" == "main":
+if __name__ == '__main__':
     main()
-    # inf()

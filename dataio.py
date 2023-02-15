@@ -1,35 +1,23 @@
 import glob
 import numpy as np
 from PIL import Image
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
 
-def infiniteloop(dataloader):
-    while True:
-        for *x, y in iter(dataloader):
-            yield *x, y
-
-
 class TrainSet(Dataset):
-    # TODO:
     # sample from the GT with 1 interval.
-    # time step <-> phi <-> angle (fix two)
-    def __init__(self, args,root, size=None):
+    def __init__(self, data_dir):
         
-        transforms_list = []
-        if size is not None:
-            transforms_list.append(transforms.Resize(size))
-        transforms_list.append(transforms.ToTensor())
-        self.transform = transforms.Compose(transforms_list)
+        self.transform = transforms.ToTensor()
 
         self.imgs, self.masks = [], []
         training_names = []
         
         # sample images with 1 interval, put sampled ones into training set
-        for name in sorted(glob.glob(f"{root}/*.png")):
-            theta = name.split("/")[-1].split("_")[2]
-            phi = name.split("/")[-1].split("_")[3].replace(".png", "")
+        for name in sorted(glob.glob(f"{data_dir}/*.png")):
+            theta = float(name.split("/")[-1].split("_")[2])
+            phi = float(name.split("/")[-1].split("_")[3].replace(".png", ""))
 
             if theta % 30 > 0 or phi % 30 > 0:
                 continue
@@ -41,7 +29,9 @@ class TrainSet(Dataset):
             self.imgs.append(self.transform(Image.fromarray(np.uint8(255 * img))))
         
         self.hw = self.imgs[0].shape[1:]
-    
-    def parser(self):
 
-if __name__ =="__main__":
+    def __len__(self):
+        return len(self.imgs)
+    
+    def __getitem__(self, idx):
+        return self.imgs[idx], idx

@@ -36,18 +36,24 @@ class Sine(nn.Module):
 
 class CondSIREN(nn.Module):
     def __init__(self, n_emb, norm_p = None, inter_fn = None, first_omega_0=30, hidden_omega_0=30, D=8, z_dim = 64, in_feat=2, out_feat=3, W=256, with_res=True, with_norm=True):
+        # n_emb is the number of images in the dataset
         # z_dim is the length of z, the code (in vector) for each image, randomly initialized
         
         super().__init__()
         # regularize z to the same scale later on for interpolation tasks
         self.norm_p = norm_p
+        # nn.Embedding is a lookup table that stores embeddings of a fixed dictionary and size
+        # for each image, we have a code vector z, which is randomly initialized
+        # the length of z is z_dim
+        # for example, for input array of shape (x, y), we have output array of shape (x, y, z_dim)
         if self.norm_p is None or self.norm_p == -1:
             self.emb = nn.Embedding(num_embeddings=n_emb, embedding_dim=z_dim)
         else:
             self.emb = nn.Embedding(num_embeddings=n_emb, embedding_dim=z_dim, max_norm=1.0, norm_type=norm_p)
         
         # the sine layers
-        for i in range(D+1):
+        # for i in range(D+1):
+        for i in range(D):
             if i == 0:
                 # in_feat = (x, y), concatenated with image code vector z
                 # output to W, default length 256 for hidden layers
@@ -61,10 +67,11 @@ class CondSIREN(nn.Module):
         
         # out dim = 3 (rgb)
         final_linear = nn.Linear(W, out_feat, bias=True)
+        # TODO: why this initialization?
         with torch.no_grad():
             final_linear.weight.uniform_(-np.sqrt(6 / W) / hidden_omega_0,  np.sqrt(6 / W) / hidden_omega_0)
-        # TODO use of Identity()?
-        self.final_rgb = nn.Sequential(final_linear, nn.Identity()) #nn.iden
+            # Use of identity?
+        self.final_rgb = nn.Sequential(final_linear, nn.Identity())
         self.D = D
         self.inter_fn = inter_fn
     
@@ -113,11 +120,14 @@ class VIINTER(CondSIREN):
 
         rand_inds = torch.randint(0, N, size=(batch_size * 2, 1)).long().squeeze()
 
+        # ??
         slt_zs = zs[rand_inds].reshape(batch_size, 2, -1)
+        # rand_like returns a tensor with the same size as input that is filled with random numbers from a uniform distribution on the interval [0, 1)
         alphas = torch.rand_like(slt_zs[:, 0:1, 0:1])
         z = self.inter_fn(a=slt_zs[:, 0], b=slt_zs[:, 1], t=alphas).squeeze(1)
         x = xy_grid_flattened.repeat(batch_size, 1, 1)
 
+        # ??
         if chunked:
             rgb = torch.zeros((x.shape[0], x.shape[1], 3), device=x.deivce)
             _p = 8192 * 1

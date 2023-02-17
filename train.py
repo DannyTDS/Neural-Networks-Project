@@ -72,9 +72,13 @@ class Solver():
 
         coords_h = np.linspace(-1, 1, self.dataset.hw[0], endpoint=False)
         coords_w = np.linspace(-1, 1, self.dataset.hw[1], endpoint=False)
+        # np.meshgrid returns a list of 2D arrays (x, y), so we stack them to get a 3D array (x, y, 2)
         xy_grid = np.stack(np.meshgrid(coords_w, coords_h), axis=-1)
+        # view() flattens the array, contiguous() makes sure the array is stored in a contiguous block of memory
+        # unsqueeze(0) adds a dimension at the beginning, so that the array has shape (1, h*w, 2)
         grid_inp = torch.FloatTensor(xy_grid).view(-1, 2).contiguous().unsqueeze(0).to(self.device)
 
+        # some resizing for using clip?
         if self.min_side > 256:
             coords_h_ds = np.linspace(-1, 1, self.dataset.hw[0]//self.ds_ratio, endpoint=False)
             coords_w_ds = np.linspace(-1, 1, self.dataset.hw[1]//self.ds_ratio, endpoint=False)
@@ -89,10 +93,12 @@ class Solver():
             clip_hw = self.dataset.hw
 
         steps = 0
+        # tqdm.trange() is a wrapper around range() that displays a progress bar
         loop = tqdm.trange(self.num_steps, disable=self.silent)
         for i in loop:
             img, ind = next(self.train_loader)
 
+            # BP with clip?
             self.optimizer.zero_grad()
             if self.clip != 0.0:
                 if i % self.percep_freq == 0:
@@ -107,15 +113,17 @@ class Solver():
                     feats_loss.backward()
             self.optimizer.step()
 
+            # img.shape = (batch_size, 3, h, w)
             num_pixels = img.shape[-2] * img.shape[-1]
+            # randperm() returns a tensor of random integers from 0 to num_pixels-1
             sind = torch.randperm(num_pixels)[:self.bsize].squeeze()
+            # permute() changes the order of the dimensions, reshape() changes the shape of the tensor
             img, ind = img[0].permute(1, 2, 0).reshape(-1, 3)[sind].to(self.device), torch.LongTensor([ind[0]]).to(self.device)
 
             self.optimizer.zero_grad()
             out = self.model(grid_inp[:, sind], ind).squeeze()
             mse_loss  = F.mse_loss(out, img)
-            loss = mse_loss
-            loss.backward()
+            mse_loss.backward()
             self.optimizer.step()
             self.scheduler.step()
 
@@ -128,6 +136,7 @@ class Solver():
                     generated = torch.clamp(mix_out[0].detach().cpu(), 0, 1).numpy()
                     Image.fromarray(np.uint8(255 * generated)).save(f"{self.save_dir}/generated_{steps}_mix.png")
                 torch.save(self.model.state_dict(), f"{self.save_dir}/model_{steps}.pt")
+                # inference part?
                 self.model.eval()
                 with torch.no_grad():
                     out = torch.zeros((grid_inp.shape[-2], 3))
@@ -135,6 +144,7 @@ class Solver():
                     for ib in range(0, len(out), _b):
                         out[ib:ib+_b] = self.model(grid_inp[:, ib:ib+_b], torch.LongTensor([0]).to(self.device)).cpu()
                 self.model.train()
+                # clamp() makes sure that all values are between 0 and 1
                 generated = torch.clamp(out.view(*self.dataset.hw, 3), 0, 1).numpy()
                 Image.fromarray(np.uint8(255 * generated)).save(f"{self.save_dir}/generated_{steps}.png")
 

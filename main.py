@@ -12,13 +12,13 @@ parser.add_argument('--size', help='if not None, resize image', default=None, ty
 
 parser.add_argument('--start_lr', default=1e-5, type=float)
 parser.add_argument('--final_lr', default=1e-6, type=float)
-parser.add_argument('--p', default=1.0, type=float)
-parser.add_argument('--z_dim', default=128, type=int)
+parser.add_argument('--p', default=1.0, help="norm order", type=float)
+parser.add_argument('--z_dim', default=128, help="length of encoding vector z", type=int)
 parser.add_argument('--clip', default=0.01, type=float)
 parser.add_argument('--percep_freq', help='compute clip loss every n-th iterations', default=2, type=int)
 
-parser.add_argument('--W', default=512, type=int)
-parser.add_argument('--D', default=8, type=int)
+parser.add_argument('--W', default=512, help="number of neurons per hidden layer", type=int)
+parser.add_argument('--D', default=8, help="number of hidden layers", type=int)
 parser.add_argument('--bsize', default=8192, type=int)
 parser.add_argument('--iters', default=300000, type=int)
 parser.add_argument('--save_freq', default=20000, type=int)

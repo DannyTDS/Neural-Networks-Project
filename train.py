@@ -146,6 +146,7 @@ class Solver():
 
         training_psnr, training_ssim = 0, 0
         for i in range(len(self.dataset)):
+            print(i)
             with torch.no_grad():
                 out = torch.zeros((grid_inp.shape[-2], 3))
                 _b = 8192 * 8

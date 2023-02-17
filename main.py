@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from model import *
 from dataio import *
@@ -21,7 +22,7 @@ parser.add_argument('--D', default=8, type=int)
 parser.add_argument('--bsize', default=8192, type=int)
 parser.add_argument('--iters', default=300000, type=int)
 parser.add_argument('--save_freq', default=20000, type=int)
-parser.add_argument('--save_dir', default='./out/', type=str)
+parser.add_argument('--save_dir', default='./out', type=str)
 parser.add_argument('--silent', action='store_true')
 
 args = parser.parse_args()
@@ -29,6 +30,10 @@ args = parser.parse_args()
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 def main():
+    # create save dir if not exist
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
+
     #init train dataset
     train_dataset = TrainSet(args.data_dir)
     #init model

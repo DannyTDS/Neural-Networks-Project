@@ -97,7 +97,8 @@ class Solver():
         loop = tqdm.trange(self.num_steps, disable=self.silent)
         for i in loop:
             img, ind = next(self.train_loader)
-
+            # for img,ind in self.train_loader:
+            
             # BP with clip?
             self.optimizer.zero_grad()
             if self.clip != 0.0:

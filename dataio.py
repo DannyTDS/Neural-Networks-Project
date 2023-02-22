@@ -12,6 +12,8 @@ class TrainSet(Dataset):
         self.transform = transforms.ToTensor()
 
         self.imgs, self.masks = [], []
+
+        # TODO; train and test set seperation
         training_names = []
         
         # sample images with 1 interval, put sampled ones into training set

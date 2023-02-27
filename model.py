@@ -67,7 +67,6 @@ class CondSIREN(nn.Module):
         
         # out dim = 3 (rgb)
         final_linear = nn.Linear(W, out_feat, bias=True)
-        # TODO: why this initialization?
         with torch.no_grad():
             final_linear.weight.uniform_(-np.sqrt(6 / W) / hidden_omega_0,  np.sqrt(6 / W) / hidden_omega_0)
             # Use of identity?

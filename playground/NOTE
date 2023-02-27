@@ -1,0 +1,7 @@
+1. How to write Loss inter? Pixel level loss?           --> YES
+2. How to do interpolation onto our validation images?
+
+
+1. 加入V/E的随机性
+2. 去掉小组设置
+3. nested inference？

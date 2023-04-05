@@ -19,10 +19,13 @@ class TrainSet(Dataset):
         self.imgs, self.training_names = [], []
 
         for i, name in enumerate(sorted(glob.glob(os.path.join(data_dir, "*.png")))):
-            theta = float(name.split("/")[-1].split("_")[2])
-            phi = float(name.split("/")[-1].split("_")[3].replace(".png", ""))
+            # theta = float(name.split("/")[-1].split("_")[2])
+            # phi = float(name.split("/")[-1].split("_")[3].replace(".png", ""))
 
-            if theta % 60 > 0 or phi % 60 > 0:
+            # if theta % 60 > 0 or phi % 60 > 0:
+            #     continue
+            
+            if i % 2 != 0:
                 continue
             
             self.training_names.append(name)

@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import clip
 import tqdm
 from PIL import Image
@@ -13,6 +14,11 @@ from utils import *
 
 class Solver():
     def __init__(self, args, dataset, model, device):
+        # log path
+        if not os.path.exists(args.log_dir):
+            os.makedirs(args.log_dir)
+        self.log_file = os.join(args.log_dir, args.name+'.txt')
+
         self.device = device
         self.silent = args.silent
         self.clip = args.clip
@@ -176,7 +182,3 @@ class Solver():
             training_ssim += ssim(np.clip(generated.numpy(), 0, 1), self.dataset.imgs[i].permute(1, 2, 0).numpy(), channel_axis=2, multichannel=True)
         training_psnr, training_ssim = training_psnr / len(self.dataset), training_ssim / len(self.dataset)
         print(f"Training PSNR: {training_psnr:.2f}, SSIM: {training_ssim:.4f}")
-
-
-    def inf(self):
-        pass

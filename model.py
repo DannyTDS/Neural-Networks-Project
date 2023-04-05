@@ -109,7 +109,7 @@ class CondSIREN(nn.Module):
             return rgb
 
 
-class VIINTER(CondSIREN):
+class Net(CondSIREN):
     def mix_forward(self, xy_grid_flattened, batch_size=4, chunked=False):
         N = self.emb.num_embeddings
         all_inds = torch.arange(0, N).type(torch.LongTensor).to(xy_grid_flattened.device)

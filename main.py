@@ -10,6 +10,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', default='data', type=str)
 parser.add_argument('--size', help='if not None, resize image', default=None, type=int)
 
+parser.add_argument('--name', help='name of the experiment', default='new_exp', type=str)
+parser.add_argument('--log_dir', help='path to keep output log, default is ./log', default='./log', type=str)
+
 parser.add_argument('--start_lr', default=1e-5, type=float)
 parser.add_argument('--final_lr', default=1e-6, type=float)
 parser.add_argument('--p', default=1.0, help="norm order", type=float)
@@ -38,25 +41,12 @@ def main():
     train_dataset = TrainSet(args.data_dir, size=(128, 128))
     #init model
     inter_fn = lerp
-    model = VIINTER(n_emb = len(train_dataset), norm_p = args.p, inter_fn=inter_fn, D=args.D, z_dim = args.z_dim, in_feat=2, out_feat=3, W=args.W, with_res=False, with_norm=True)
+    model = Net(n_emb = len(train_dataset), norm_p = args.p, inter_fn=inter_fn, D=args.D, z_dim = args.z_dim, in_feat=2, out_feat=3, W=args.W, with_res=False, with_norm=True)
     model.to(DEVICE)
     #init solver
     solver = Solver(args, train_dataset, model, DEVICE)
     # train the model
     solver.train()
-    pass
-
-# def inf():
-#     #init model
-#     model = VIINTER()
-#     #load weight
-
-#     #init inf dataset
-
-#     #init solver
-#     # solver = Solver(dataset,arge,model)
-#     # solver.inf()
-#     # pass
 
 
 if __name__ == '__main__':

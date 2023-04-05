@@ -30,12 +30,13 @@ class Solver():
         self.dataset = dataset
         self.train_loader = infiniteloop(DataLoader(self.dataset, batch_size=self.bsize, shuffle=True, drop_last=False, num_workers=4, pin_memory=True))
         self.model = model
-        self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=args.start_lr)
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=self.num_steps, eta_min=args.final_lr)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=args.start_lr, betas=(0.9,0.999), weight_decay=1e-6)
+        # self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=self.num_steps, eta_min=args.final_lr)
 
         self.min_side = min(self.dataset.hw[0], self.dataset.hw[1])
         self.ds_ratio = self.min_side // 256
-        if self.clip > 0.0:
+        if self.clip != 0.0:
+            print("Initializing CLIP model...")
             self.init_clip()
     
 
@@ -55,9 +56,9 @@ class Solver():
         with torch.no_grad():
             for im in self.dataset.imgs:
                 if self.min_side > 256:
-                    im = torchvision.transforms.Resize(self.min_side//self.ds_ratio)(im)
+                    im = torchvision.transforms.Resize(self.in_side//self.ds_ratio)(im)
                 im = im.to(self.device).unsqueeze(0)
-                patches = F.unfold(im, kernel_size=(self.clip_im_size, self.clip_im_size), stride=self.clip_im_size)
+                patches = F.unfold(im, kernel_size = (self.clip_im_size, self.clip_im_size), stride=self.clip_im_size)
                 patches = patches.reshape(3, self.clip_im_size, self.clip_im_size, -1).permute(3, 0, 1, 2)
                 self.im_feats.append(self.clip_model.encode_image(self.clip_transform(patches)).float().detach().squeeze())
                 self.imgs.append(im.to(self.device))
@@ -94,21 +95,24 @@ class Solver():
 
         steps = 0
         # tqdm.trange() is a wrapper around range() that displays a progress bar
-        loop = tqdm.trange(self.num_steps, disable=self.silent)
-        for i in loop:
+        # loop = tqdm.trange(self.num_steps, disable=self.silent)
+        for i in range(self.num_steps):
             img, ind = next(self.train_loader)
             # for img,ind in self.train_loader:
             
-            # BP with clip?
+            # <--- BP with Linter -->
             self.optimizer.zero_grad()
             if self.clip != 0.0:
                 if i % self.percep_freq == 0:
                     mix_out, ia, ib, alpha, z = self.model.mix_forward(clip_grid_inp, batch_size=self.bsize)
+                    # mix_out, ia, ib, alpha, z = self.model.mix_forward(clip_grid_inp)
                     mix_out = mix_out.view(-1, clip_hw[0], clip_hw[1], 3)
 
                     patches = F.unfold(mix_out.permute(0, 3, 1, 2), kernel_size=(self.clip_im_size, self.clip_im_size), stride=self.clip_im_size)
                     patches = patches.reshape(3, self.clip_im_size, self.clip_im_size, -1).permute(3, 0, 1, 2)
+                    # print(patches)
                     out_emb = self.clip_model.encode_image(self.clip_transform(patches)).float().squeeze()
+                    # print(out_emb)
                     mix_emb = (self.im_feats[ia] * (1-alpha)) + (self.im_feats[ib] * alpha)
                     feats_loss = F.mse_loss(out_emb, mix_emb.squeeze()) * self.clip
                     feats_loss.backward()
@@ -121,16 +125,19 @@ class Solver():
             # permute() changes the order of the dimensions, reshape() changes the shape of the tensor
             img, ind = img[0].permute(1, 2, 0).reshape(-1, 3)[sind].to(self.device), torch.LongTensor([ind[0]]).to(self.device)
 
+            # <--- BP with Lrecon --->
             self.optimizer.zero_grad()
             out = self.model(grid_inp[:, sind], ind).squeeze()
             mse_loss  = F.mse_loss(out, img)
             mse_loss.backward()
             self.optimizer.step()
-            self.scheduler.step()
+            # self.scheduler.step()
 
             psnr = 10 * np.log10(1 / mse_loss.item())
+            print("Iter {}:\tPSNR = {:.3f};\tloss = {:.3f}".format(steps, psnr, mse_loss.item()))
+            # loop.set_postfix(PSNR = psnr)
+            # loop.set_postfix(loss = mse_loss.item())
             steps += 1
-            loop.set_postfix(PSNR = psnr)
 
             if steps % self.save_freq == 0:
                 if self.clip > 0.0:
@@ -157,7 +164,6 @@ class Solver():
 
         training_psnr, training_ssim = 0, 0
         for i in range(len(self.dataset)):
-            print(i)
             with torch.no_grad():
                 out = torch.zeros((grid_inp.shape[-2], 3))
                 _b = 8192 * 8

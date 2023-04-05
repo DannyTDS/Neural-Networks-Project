@@ -35,7 +35,7 @@ def main():
         os.makedirs(args.save_dir)
 
     #init train dataset
-    train_dataset = TrainSet(args.data_dir)
+    train_dataset = TrainSet(args.data_dir, size=(128, 128))
     #init model
     inter_fn = lerp
     model = VIINTER(n_emb = len(train_dataset), norm_p = args.p, inter_fn=inter_fn, D=args.D, z_dim = args.z_dim, in_feat=2, out_feat=3, W=args.W, with_res=False, with_norm=True)

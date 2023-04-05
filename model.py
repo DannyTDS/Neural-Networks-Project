@@ -119,14 +119,18 @@ class VIINTER(CondSIREN):
 
         rand_inds = torch.randint(0, N, size=(batch_size * 2, 1)).long().squeeze()
 
-        # ??
         slt_zs = zs[rand_inds].reshape(batch_size, 2, -1)
+        # print(slt_zs.shape)
         # rand_like returns a tensor with the same size as input that is filled with random numbers from a uniform distribution on the interval [0, 1)
         alphas = torch.rand_like(slt_zs[:, 0:1, 0:1])
-        z = self.inter_fn(a=slt_zs[:, 0], b=slt_zs[:, 1], t=alphas).squeeze(1)
+        #print(alphas.shape)
+        #print(slt_zs[:, 0].shape)
+        #print(slt_zs[:, 1].shape)
+        z = self.inter_fn(a=slt_zs[:, 0].unsqueeze(-1), b=slt_zs[:, 1].unsqueeze(-1), t=alphas).squeeze()
         x = xy_grid_flattened.repeat(batch_size, 1, 1)
+        # print(z.shape)
+        # print(x.shape)
 
-        # ??
         if chunked:
             rgb = torch.zeros((x.shape[0], x.shape[1], 3), device=x.deivce)
             _p = 8192 * 1

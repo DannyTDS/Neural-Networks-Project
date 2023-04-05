@@ -1,21 +1,24 @@
 import glob
 import os
-import numpy as np
-import torch
+# import numpy as np
+# import torch
 from PIL import Image
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
 
 class TrainSet(Dataset):
-    def __init__(self, data_dir):
+    def __init__(self, data_dir, size=None):
         # Feb 25: for unsupervised learning in the validation step, we sample at a larger interval
+        transforms_list = []
+        if size is not None:
+            transforms_list.append(transforms.Resize(size))
+        transforms_list.append(transforms.ToTensor())
+        self.transform = transforms.Compose(transforms_list)
 
         self.imgs, self.training_names = [], []
-        
-        trans = transforms.Compose([transforms.ToTensor()])
 
-        for name in sorted(glob.glob(os.path.join(data_dir, "*.png"))):
+        for i, name in enumerate(sorted(glob.glob(os.path.join(data_dir, "*.png")))):
             theta = float(name.split("/")[-1].split("_")[2])
             phi = float(name.split("/")[-1].split("_")[3].replace(".png", ""))
 
@@ -27,7 +30,7 @@ class TrainSet(Dataset):
             # img = np.asarray(Image.open(name).convert('RGB')) / 255.
             # self.imgs.append(trans(Image.fromarray(np.uint8(255 * img))))
             # shape = [C, H, W]
-            self.imgs.append(trans(Image.open(name).convert("RGB")))
+            self.imgs.append(self.transform(Image.open(name).convert("RGB")))
         
         self.hw = self.imgs[0].shape[1:]
 
